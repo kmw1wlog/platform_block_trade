@@ -1,10 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { DisclaimerBanner } from "@/components/app/DisclaimerBanner";
+import { useEffect, useRef, useState } from "react";
 import { MockBacktestReport } from "@/components/report/MockBacktestReport";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import { quickIdeaButtons, quickIdeas } from "@/lib/constants";
 import { addEvent, saveReport, updateStrategy } from "@/lib/storage";
@@ -12,13 +9,26 @@ import type { MockBacktestReport as Report, StrategyCard as StrategyCardType } f
 import { StrategyCard } from "./StrategyCard";
 
 export function StrategyInput() {
-  const [rawIdea, setRawIdea] = useState(quickIdeas[0]);
+  const [rawIdea, setRawIdea] = useState("");
   const [strategy, setStrategy] = useState<StrategyCardType | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 112)}px`;
+  }, [rawIdea]);
 
   async function createStrategy() {
+    const idea = rawIdea.trim();
+    if (!idea) {
+      setError("전략 아이디어를 한 문장으로 적어주세요.");
+      return;
+    }
     setLoading(true);
     setError("");
     setReport(null);
@@ -26,11 +36,12 @@ export function StrategyInput() {
       const response = await fetch("/api/strategy/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawIdea }),
+        body: JSON.stringify({ rawIdea: idea }),
       });
       const data = (await response.json()) as { strategy?: StrategyCardType; error?: string };
       if (!response.ok || !data.strategy) throw new Error(data.error ?? "전략 카드를 만들지 못했습니다.");
       setStrategy(data.strategy);
+      setRawIdea("");
       addEvent({
         type: "strategy_created",
         strategyId: data.strategy.id,
@@ -69,55 +80,88 @@ export function StrategyInput() {
   }
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="space-y-6">
-        <section className="py-6">
-          <h1 className="max-w-3xl text-4xl font-black tracking-normal text-slate-950 md:text-5xl">
-            말하면 전략 카드가 된다, 식톡
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-            조건식 몰라도 괜찮습니다. 말로 적으면 AI가 진입·청산·종목·필터 조건으로 나눠줍니다.
-          </p>
-          <p className="mt-3 text-sm font-semibold text-amber-800">
-            현재는 전략 정리와 모의검증용 MVP이며, 실제 투자 추천이나 자동매매 기능을 제공하지 않습니다.
+    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] max-w-5xl flex-col">
+      <div className="flex flex-1 flex-col gap-5">
+        <section className={`mx-auto max-w-2xl pt-8 text-center ${strategy ? "hidden md:block" : ""}`}>
+          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-emerald-600 text-2xl font-black text-white shadow-sm">
+            식
+          </div>
+          <h1 className="text-2xl font-black tracking-normal text-slate-950 md:text-4xl">말하면 전략 카드</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-500 md:text-base">
+            아이디어를 적으면 진입, 청산, 필터로 나눠 정리합니다.
           </p>
         </section>
 
-        <Card className="space-y-4">
-          <Textarea
-            rows={5}
-            placeholder="예: 거래량이 갑자기 늘고 전고점을 돌파하면 관심종목으로 보고 싶어."
-            value={rawIdea}
-            onChange={(event) => setRawIdea(event.target.value)}
-          />
-          <div className="flex flex-wrap gap-2">
-            {quickIdeaButtons.map((item) => (
-              <Button key={item.label} variant="ghost" className="min-h-9 px-3 py-1" onClick={() => setRawIdea(item.idea)}>
-                {item.label}
-              </Button>
-            ))}
+        {!strategy ? (
+          <div className="mx-auto mt-auto max-w-2xl space-y-3 pb-24 md:pb-0">
+            <div className="grid gap-2 text-sm font-semibold text-slate-800">
+              {quickIdeaButtons.slice(0, 3).map((item, index) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  className="flex min-h-12 items-center gap-4 rounded-2xl bg-white px-2 text-left transition hover:bg-slate-50 md:px-4"
+                  onClick={() => setRawIdea(item.idea)}
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-lg">
+                    {["↗", "⌁", "▤"][index]}
+                  </span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={createStrategy} disabled={loading}>
-              {loading ? "정리 중..." : "전략 카드 만들기"}
-            </Button>
-            {error ? <span className="text-sm font-semibold text-rose-600">{error}</span> : null}
-          </div>
-        </Card>
+        ) : null}
 
-        {strategy ? <StrategyCard strategy={strategy} onBacktest={runBacktest} /> : null}
-        {strategy && report ? <MockBacktestReport strategy={strategy} report={report} /> : null}
+        {strategy ? (
+          <div className="mx-auto max-w-5xl space-y-5 pb-28 md:pb-0">
+            <StrategyCard strategy={strategy} onBacktest={runBacktest} />
+            {report ? <MockBacktestReport strategy={strategy} report={report} /> : null}
+          </div>
+        ) : null}
       </div>
 
-      <aside className="space-y-4">
-        <DisclaimerBanner />
-        <Card>
-          <h2 className="text-lg font-black text-slate-950">AI 코치</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            식톡은 정확한 조건식 생성기가 아니라, 아이디어를 비교 가능한 문장형 전략 카드로 정리하는 작업공간입니다.
-          </p>
-        </Card>
-      </aside>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-100 bg-white/95 px-4 pb-4 pt-3 backdrop-blur md:sticky md:bottom-4 md:mx-auto md:mt-6 md:w-full md:max-w-3xl md:rounded-3xl md:border md:px-4 md:shadow-lg md:ring-1 md:ring-slate-100">
+        {error ? <p className="mb-2 text-center text-sm font-semibold text-rose-600">{error}</p> : null}
+        <div className="flex items-end gap-2 rounded-full bg-slate-100 px-2 py-2 ring-1 ring-slate-200">
+          <button
+            type="button"
+            aria-label="예시"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-3xl leading-none shadow-sm"
+            onClick={() => setRawIdea(quickIdeas[0])}
+          >
+            +
+          </button>
+          <Textarea
+            ref={textareaRef}
+            rows={1}
+            placeholder="전략 아이디어 입력"
+            value={rawIdea}
+            onChange={(event) => setRawIdea(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void createStrategy();
+              }
+            }}
+            className="max-h-28 min-h-10 min-w-0 flex-1 resize-none !rounded-none !border-0 !bg-transparent px-1 py-2 text-base leading-6 shadow-none focus:!border-transparent focus:!ring-0"
+          />
+          <button
+            type="button"
+            aria-label="전략 카드 만들기"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-950 text-xl font-black text-white transition disabled:bg-slate-300"
+            onClick={createStrategy}
+            disabled={loading}
+          >
+            {loading ? "…" : "↑"}
+          </button>
+        </div>
+
+        <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-semibold text-slate-400">
+          <span>실제 투자 추천 아님</span>
+          <span>·</span>
+          <span>모의검증용</span>
+        </div>
+      </div>
     </div>
   );
 }
