@@ -4,11 +4,11 @@ import { TopNav } from "./TopNav";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-white text-slate-950 md:bg-slate-50">
       <TopNav />
       <div className="flex">
         <Sidebar />
-        <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-6 md:py-6 lg:px-8">{children}</main>
       </div>
     </div>
   );
