@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { platformLabels } from "@/lib/constants";
-import { recordConversionClick } from "@/lib/storage";
+import { spendCookies } from "@/lib/cookies";
+import { addEvent, recordConversionClick } from "@/lib/storage";
 import type { ConversionPlatform, StrategyCard } from "@/lib/types";
 import { FakeDoorModal } from "./FakeDoorModal";
 
@@ -18,8 +19,27 @@ const platforms: ConversionPlatform[] = [
 
 export function ConversionButtons({ strategy }: { strategy: StrategyCard }) {
   const [selected, setSelected] = useState<ConversionPlatform | null>(null);
+  const [message, setMessage] = useState("");
 
   function open(platform: ConversionPlatform) {
+    if (platform === "tradingview" || platform === "yestrader") {
+      addEvent({
+        type: "apply_clicked",
+        strategyId: strategy.id,
+        platform,
+        cookiesRequired: 2,
+        createdAt: new Date().toISOString(),
+      });
+      const ok = spendCookies(2, `${platformLabels[platform]} 적용 요청`);
+      if (!ok) {
+        addEvent({ type: "cookie_paywall_viewed", platform, createdAt: new Date().toISOString() });
+        window.location.href = `/cookies?platform=${platform}`;
+        return;
+      }
+      recordConversionClick(strategy.id, platform, strategy.strategyType, "card");
+      setMessage(`${platformLabels[platform]} 적용 요청을 기록했습니다. 쿠키 2개가 사용되었습니다.`);
+      return;
+    }
     recordConversionClick(strategy.id, platform, strategy.strategyType, "card");
     setSelected(platform);
   }
@@ -30,10 +50,13 @@ export function ConversionButtons({ strategy }: { strategy: StrategyCard }) {
       <div className="flex flex-wrap gap-2">
         {platforms.map((platform) => (
           <Button key={platform} variant="secondary" onClick={() => open(platform)}>
-            {platformLabels[platform]} 변환 요청
+            {platform === "tradingview" || platform === "yestrader"
+              ? `${platformLabels[platform]} 적용 · 쿠키 2개`
+              : `${platformLabels[platform]} 요청`}
           </Button>
         ))}
       </div>
+      {message ? <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{message}</p> : null}
       {selected ? (
         <FakeDoorModal
           strategy={strategy}

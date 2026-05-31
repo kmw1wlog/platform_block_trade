@@ -45,6 +45,63 @@ export type ConversionPlatform =
   | "webhook"
   | "telegram";
 
+export type ConditionCategory = "entry" | "exit" | "universe" | "filters" | "risk";
+
+export type ConditionTemplate = {
+  id: string;
+  title: string;
+  category: ConditionCategory;
+  market: AssetClass;
+  strategyType: StrategyType;
+  difficulty: "easy" | "medium" | "advanced";
+  plainKorean: string;
+  whyUse: string;
+  tags: string[];
+  requiredInputs: string[];
+};
+
+export type OnboardingAnswers = {
+  market?: AssetClass;
+  pace?: "fast" | "intraday" | "swing";
+  setup?: "breakout" | "pullback" | "meanReversion" | "closingBet" | "volume" | "risk";
+  universe?: "volume" | "news" | "leader" | "fundamental" | "all";
+  risk?: "tight" | "atr" | "time" | "wide";
+};
+
+export type CookiePack = {
+  id: "cookies_10" | "cookies_50" | "cookies_100";
+  cookies: number;
+  originalPrice: number;
+  price: number;
+  discountPct: number;
+};
+
+export type CookieTransaction = {
+  id: string;
+  type: "charge" | "spend";
+  amount: number;
+  reason: string;
+  createdAt: string;
+};
+
+export type PaperTrade = {
+  id: string;
+  side: "buy" | "sell";
+  price: number;
+  quantity: number;
+  createdAt: string;
+};
+
+export type PaperCandle = {
+  index: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  atr: number;
+};
+
 export type StrategyCard = {
   id: string;
   title: string;
@@ -141,5 +198,67 @@ export type AnalyticsEvent =
   | {
       type: "oracle_clicked";
       strategyId: string;
+      createdAt: string;
+    }
+  | {
+      type: "onboarding_started";
+      createdAt: string;
+    }
+  | {
+      type: "onboarding_answered";
+      step: string;
+      answer: string;
+      createdAt: string;
+    }
+  | {
+      type: "onboarding_completed";
+      createdAt: string;
+    }
+  | {
+      type: "condition_recommended";
+      conditionId: string;
+      createdAt: string;
+    }
+  | {
+      type: "condition_saved";
+      conditionId: string;
+      createdAt: string;
+    }
+  | {
+      type: "apply_clicked";
+      conditionId?: string;
+      strategyId?: string;
+      platform: ConversionPlatform;
+      cookiesRequired: number;
+      createdAt: string;
+    }
+  | {
+      type: "cookie_paywall_viewed";
+      platform?: ConversionPlatform;
+      createdAt: string;
+    }
+  | {
+      type: "cookie_pack_selected";
+      packId: CookiePack["id"];
+      createdAt: string;
+    }
+  | {
+      type: "demo_checkout_opened";
+      packId: CookiePack["id"];
+      createdAt: string;
+    }
+  | {
+      type: "demo_checkout_completed";
+      packId: CookiePack["id"];
+      createdAt: string;
+    }
+  | {
+      type: "paper_trading_opened";
+      createdAt: string;
+    }
+  | {
+      type: "paper_trade_executed";
+      side: PaperTrade["side"];
+      price: number;
       createdAt: string;
     };

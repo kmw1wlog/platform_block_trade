@@ -17,6 +17,9 @@ function uniq(items: string[]): string[] {
 }
 
 function inferStrategyType(text: string): StrategyType {
+  if (includesAny(text, ["코인", "btc", "eth", "비트코인", "이더리움"]) && includesAny(text, ["5분", "급등", "스캘핑"])) {
+    return "scalping";
+  }
   if (includesAny(text, ["전고점", "돌파", "신고가", "고점 돌파"])) return "breakout";
   if (includesAny(text, ["눌림", "조정", "20일선", "5일선", "되돌림"])) return "pullback";
   if (includesAny(text, ["rsi", "과매도", "반등", "볼린저", "하단"])) return "meanReversion";
@@ -51,6 +54,9 @@ function inferTimeframe(text: string, strategyType: StrategyType): Timeframe {
 }
 
 function buildTitle(text: string, strategyType: StrategyType): string {
+  if (includesAny(text, ["코인", "btc", "eth", "비트코인", "이더리움"]) && includesAny(text, ["5분", "급등", "스캘핑"])) {
+    return "코인 5분봉 고변동성 초입 전략";
+  }
   if (includesAny(text, ["거래량", "거래대금"]) && includesAny(text, ["전고점", "돌파"])) {
     return "거래량 급증 전고점 돌파 전략";
   }

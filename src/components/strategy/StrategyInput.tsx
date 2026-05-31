@@ -1,15 +1,44 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { MockBacktestReport } from "@/components/report/MockBacktestReport";
 import { Textarea } from "@/components/ui/Textarea";
-import { quickIdeaButtons, quickIdeas } from "@/lib/constants";
+import { quickIdeas } from "@/lib/constants";
 import { addEvent, saveReport, updateStrategy } from "@/lib/storage";
-import type { MockBacktestReport as Report, StrategyCard as StrategyCardType } from "@/lib/types";
+import type { AssetClass, MockBacktestReport as Report, StrategyCard as StrategyCardType } from "@/lib/types";
 import { StrategyCard } from "./StrategyCard";
 
-export function StrategyInput() {
-  const [rawIdea, setRawIdea] = useState("");
+const marketOptions: { label: string; value: AssetClass; hint: string }[] = [
+  { label: "국장", value: "koreanStock", hint: "상따·종베·거래대금" },
+  { label: "미장", value: "usStock", hint: "추세·ETF·뉴스" },
+  { label: "코인", value: "crypto", hint: "5분봉·변동성" },
+];
+
+const marketIdeas: Record<AssetClass, { label: string; idea: string }[]> = {
+  koreanStock: [
+    { label: "거래량 돌파", idea: "거래량이 갑자기 늘고 전고점을 돌파하면 관심종목으로 보고 싶어." },
+    { label: "종가베팅 후보", idea: "장 막판에 거래대금이 붙고 고가권을 유지하는 종목을 찾고 싶어." },
+    { label: "상따 관찰식", idea: "상한가 근처에서 거래대금이 계속 붙는 종목을 관찰하고 싶어." },
+  ],
+  usStock: [
+    { label: "ETF 박스 돌파", idea: "미국 ETF가 20일 박스권 상단을 돌파하면 추세 후보로 보고 싶어." },
+    { label: "뉴스 거래량 반응", idea: "뉴스 이후 거래량이 붙고 전일 고가를 회복하는 미국 종목을 보고 싶어." },
+    { label: "신고가 추세", idea: "신고가 근처에서 거래대금이 늘어나는 미장 종목을 찾고 싶어." },
+  ],
+  crypto: [
+    { label: "5분봉 급등 초입", idea: "코인 5분봉에서 거래량이 급증하고 박스권 상단을 돌파하면 보고 싶어." },
+    { label: "ATR 비중 조절", idea: "ATR이 커지는 코인은 비중을 줄이고 짧게 대응하고 싶어." },
+    { label: "급등 후 눌림", idea: "코인이 급등 후 첫 눌림에서 다시 반등할 때 관찰하고 싶어." },
+  ],
+  etf: quickIdeas.slice(0, 3).map((idea) => ({ label: "예시 전략", idea })),
+  futures: quickIdeas.slice(0, 3).map((idea) => ({ label: "예시 전략", idea })),
+  unknown: quickIdeas.slice(0, 3).map((idea) => ({ label: "예시 전략", idea })),
+};
+
+export function StrategyInput({ initialIdea = "" }: { initialIdea?: string }) {
+  const [rawIdea, setRawIdea] = useState(initialIdea);
+  const [selectedMarket, setSelectedMarket] = useState<AssetClass>("koreanStock");
   const [strategy, setStrategy] = useState<StrategyCardType | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,8 +52,20 @@ export function StrategyInput() {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 112)}px`;
   }, [rawIdea]);
 
-  async function createStrategy() {
-    const idea = rawIdea.trim();
+  useEffect(() => {
+    const saved = window.localStorage.getItem("siktalk.selectedMarket");
+    if (saved === "koreanStock" || saved === "usStock" || saved === "crypto") {
+      setSelectedMarket(saved);
+    }
+  }, []);
+
+  function selectMarket(market: AssetClass) {
+    setSelectedMarket(market);
+    window.localStorage.setItem("siktalk.selectedMarket", market);
+  }
+
+  async function createStrategy(ideaFromTemplate?: string) {
+    const idea = (ideaFromTemplate ?? rawIdea).trim();
     if (!idea) {
       setError("전략 아이디어를 한 문장으로 적어주세요.");
       return;
@@ -80,7 +121,7 @@ export function StrategyInput() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] max-w-5xl flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-[calc(100vw-2rem)] flex-col md:max-w-5xl">
       <div className="flex flex-1 flex-col gap-5">
         <section className={`mx-auto max-w-2xl pt-8 text-center ${strategy ? "hidden md:block" : ""}`}>
           <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-emerald-600 text-2xl font-black text-white shadow-sm">
@@ -88,24 +129,24 @@ export function StrategyInput() {
           </div>
           <h1 className="text-2xl font-black tracking-normal text-slate-950 md:text-4xl">말하면 전략 카드</h1>
           <p className="mt-3 text-sm leading-6 text-slate-500 md:text-base">
-            아이디어를 적으면 진입, 청산, 필터로 나눠 정리합니다.
+            진입·청산·필터로 정리합니다.
           </p>
         </section>
 
         {!strategy ? (
-          <div className="mx-auto mt-auto max-w-2xl space-y-3 pb-24 md:pb-0">
+          <div className="mx-auto mt-auto w-full max-w-2xl space-y-4 pb-24 md:pb-0">
             <div className="grid gap-2 text-sm font-semibold text-slate-800">
-              {quickIdeaButtons.slice(0, 3).map((item, index) => (
+              {marketIdeas[selectedMarket].map((idea, index) => (
                 <button
-                  key={item.label}
+                  key={idea.label}
                   type="button"
                   className="flex min-h-12 items-center gap-4 rounded-2xl bg-white px-2 text-left transition hover:bg-slate-50 md:px-4"
-                  onClick={() => setRawIdea(item.idea)}
+                  onClick={() => setRawIdea(idea.idea)}
                 >
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-lg">
                     {["↗", "⌁", "▤"][index]}
                   </span>
-                  <span>{item.label}</span>
+                  <span>{idea.label}</span>
                 </button>
               ))}
             </div>
@@ -113,7 +154,7 @@ export function StrategyInput() {
         ) : null}
 
         {strategy ? (
-          <div className="mx-auto max-w-5xl space-y-5 pb-28 md:pb-0">
+          <div className="mx-auto max-w-5xl space-y-5 pb-44 md:pb-0">
             <StrategyCard strategy={strategy} onBacktest={runBacktest} />
             {report ? <MockBacktestReport strategy={strategy} report={report} /> : null}
           </div>
@@ -122,6 +163,26 @@ export function StrategyInput() {
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-100 bg-white/95 px-4 pb-4 pt-3 backdrop-blur md:sticky md:bottom-4 md:mx-auto md:mt-6 md:w-full md:max-w-3xl md:rounded-3xl md:border md:px-4 md:shadow-lg md:ring-1 md:ring-slate-100">
         {error ? <p className="mb-2 text-center text-sm font-semibold text-rose-600">{error}</p> : null}
+        <div className="mb-2 flex items-center justify-between gap-2 px-1">
+          <div className="inline-flex rounded-full bg-slate-100 p-1">
+            {marketOptions.map((market) => (
+              <button
+                key={market.value}
+                type="button"
+                aria-label={`${market.label} 시장 선택`}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  selectedMarket === market.value ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
+                }`}
+                onClick={() => selectMarket(market.value)}
+              >
+                {market.label}
+              </button>
+            ))}
+          </div>
+          <Link href="/conditions" className="rounded-full px-2 py-1.5 text-xs font-bold text-emerald-700">
+            도구함
+          </Link>
+        </div>
         <div className="flex items-end gap-2 rounded-full bg-slate-100 px-2 py-2 ring-1 ring-slate-200">
           <button
             type="button"
@@ -149,7 +210,7 @@ export function StrategyInput() {
             type="button"
             aria-label="전략 카드 만들기"
             className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-950 text-xl font-black text-white transition disabled:bg-slate-300"
-            onClick={createStrategy}
+            onClick={() => void createStrategy()}
             disabled={loading}
           >
             {loading ? "…" : "↑"}

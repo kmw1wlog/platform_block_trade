@@ -12,6 +12,15 @@ const groups = [
   "리스크 관리식",
 ];
 
+const bottomLinks = [
+  { href: "/app", label: "말로 만들기" },
+  { href: "/conditions", label: "조건식 도구함" },
+  { href: "/paper-trading", label: "모의투자" },
+  { href: "/library", label: "자료실" },
+  { href: "/dashboard", label: "분석" },
+  { href: "/cookies", label: "쿠키 굽기" },
+];
+
 export function Sidebar() {
   return (
     <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white px-4 py-6 lg:block">
@@ -27,8 +36,19 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-      <div className="mt-8 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
-        조건식 몰라도 괜찮습니다. 먼저 말로 정리하고, 필요한 변환 수요만 기록합니다.
+      <div className="mt-8 border-t border-slate-200 pt-4">
+        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">바로가기</div>
+        <nav className="space-y-1">
+          {bottomLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </aside>
   );

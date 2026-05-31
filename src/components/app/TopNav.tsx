@@ -18,11 +18,20 @@ export function TopNav() {
           </Link>
         </div>
         <nav className="hidden items-center gap-4 text-sm font-semibold text-slate-600 md:flex">
+          <Link href="/app" className="hover:text-emerald-700">
+            만들기
+          </Link>
+          <Link href="/conditions" className="hover:text-emerald-700">
+            조건식
+          </Link>
           <Link href="/drawer" className="hover:text-emerald-700">
             식 서랍
           </Link>
           <Link href="/library" className="hover:text-emerald-700">
             자료실
+          </Link>
+          <Link href="/paper-trading" className="hover:text-emerald-700">
+            모의투자
           </Link>
           <Link href="/dashboard" className="hover:text-emerald-700">
             대시보드
@@ -32,13 +41,15 @@ export function TopNav() {
           </Link>
         </nav>
         <div className="hidden items-center gap-2 md:flex">
-          <span className="text-sm font-semibold text-slate-600">쿠키 0개</span>
-          <Badge tone="emerald">Free 플랜</Badge>
+          <Link href="/cookies" className="text-sm font-semibold text-slate-600 hover:text-emerald-700">
+            쿠키 굽기
+          </Link>
+          <Badge tone="emerald">Beta</Badge>
         </div>
         <div className="flex items-center md:hidden">
           <Link
-            href="/library"
-            aria-label="자료실"
+            href="/conditions"
+            aria-label="조건식 도구함"
             className="flex size-11 items-center justify-center rounded-full bg-white text-2xl shadow-sm ring-1 ring-slate-100"
           >
             ⌕

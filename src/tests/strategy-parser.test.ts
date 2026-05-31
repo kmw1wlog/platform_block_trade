@@ -21,6 +21,13 @@ describe("parseStrategyIdea", () => {
     expect(card.assetClass).toBe("crypto");
   });
 
+  it("코인 5분봉 급등 입력은 코인 초입 전략으로 제목을 잡는다", () => {
+    const card = parseStrategyIdea("코인 5분봉에서 거래량이 급증하고 박스권 상단을 돌파하면 보고 싶어.");
+    expect(card.assetClass).toBe("crypto");
+    expect(card.strategyType).toBe("scalping");
+    expect(card.title).toContain("코인 5분봉");
+  });
+
   it("생성된 전략 카드는 필수 필드를 가진다", () => {
     const card = parseStrategyIdea("갭 상승 후 눌림목이 오면 진입하고 싶어.");
     expect(card.id).toBeTruthy();

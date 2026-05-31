@@ -1,10 +1,5 @@
-import { AppShell } from "@/components/app/AppShell";
-import { StrategyInput } from "@/components/strategy/StrategyInput";
+import { LandingPage } from "@/components/landing/LandingPage";
 
 export default function Home() {
-  return (
-    <AppShell>
-      <StrategyInput />
-    </AppShell>
-  );
+  return <LandingPage />;
 }
