@@ -1,13 +1,16 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import { cn } from "@/lib/cn";
 
-export function Card({ className, children, ...props }: HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
+export function Card({
+  children,
+  className = "",
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
   return (
-    <div
-      className={cn("rounded-2xl border border-slate-200 bg-white p-6 shadow-sm", className)}
+    <section
+      className={`max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm ${className}`}
       {...props}
     >
       {children}
-    </div>
+    </section>
   );
 }
