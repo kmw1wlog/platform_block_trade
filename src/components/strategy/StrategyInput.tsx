@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { DemoPlatformPanel } from "@/components/demo/DemoPlatformPanel";
 import { MockBacktestReport } from "@/components/report/MockBacktestReport";
 import { Textarea } from "@/components/ui/Textarea";
 import { quickIdeas } from "@/lib/constants";
+import { DEMO_STRATEGY, DEMO_STRATEGY_QUESTION, isDemoStrategyQuestion } from "@/lib/demo-strategy";
 import { addEvent, saveReport, updateStrategy } from "@/lib/storage";
 import type { AssetClass, MockBacktestReport as Report, StrategyCard as StrategyCardType } from "@/lib/types";
 import { StrategyCard } from "./StrategyCard";
@@ -41,6 +43,7 @@ export function StrategyInput({ initialIdea = "" }: { initialIdea?: string }) {
   const [selectedMarket, setSelectedMarket] = useState<AssetClass>("koreanStock");
   const [strategy, setStrategy] = useState<StrategyCardType | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [showDemoPanel, setShowDemoPanel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -70,9 +73,26 @@ export function StrategyInput({ initialIdea = "" }: { initialIdea?: string }) {
       setError("전략 아이디어를 한 문장으로 적어주세요.");
       return;
     }
+    if (isDemoStrategyQuestion(idea)) {
+      const createdAt = new Date().toISOString();
+      const nextStrategy = { ...DEMO_STRATEGY, createdAt, updatedAt: createdAt };
+      setStrategy(nextStrategy);
+      setRawIdea("");
+      setReport(null);
+      setShowDemoPanel(true);
+      setError("");
+      addEvent({
+        type: "strategy_created",
+        strategyId: nextStrategy.id,
+        strategyType: nextStrategy.strategyType,
+        createdAt,
+      });
+      return;
+    }
     setLoading(true);
     setError("");
     setReport(null);
+    setShowDemoPanel(false);
     try {
       const response = await fetch("/api/strategy/parse", {
         method: "POST",
@@ -83,6 +103,7 @@ export function StrategyInput({ initialIdea = "" }: { initialIdea?: string }) {
       if (!response.ok || !data.strategy) throw new Error(data.error ?? "전략 카드를 만들지 못했습니다.");
       setStrategy(data.strategy);
       setRawIdea("");
+      setShowDemoPanel(false);
       addEvent({
         type: "strategy_created",
         strategyId: data.strategy.id,
@@ -135,6 +156,17 @@ export function StrategyInput({ initialIdea = "" }: { initialIdea?: string }) {
 
         {!strategy ? (
           <div className="mx-auto mt-auto w-full max-w-2xl space-y-4 pb-24 md:pb-0">
+            <button
+              type="button"
+              className="flex min-h-12 w-full items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-left text-sm font-black text-emerald-900 transition hover:bg-emerald-100"
+              onClick={() => {
+                setRawIdea(DEMO_STRATEGY_QUESTION);
+                selectMarket("koreanStock");
+              }}
+            >
+              <span>데모 질문 넣기</span>
+              <span className="text-xs text-emerald-700">MA5/MA20 플랫폼 변환</span>
+            </button>
             <div className="grid gap-2 text-sm font-semibold text-slate-800">
               {marketIdeas[selectedMarket].map((idea, index) => (
                 <button
@@ -154,8 +186,9 @@ export function StrategyInput({ initialIdea = "" }: { initialIdea?: string }) {
         ) : null}
 
         {strategy ? (
-          <div className="mx-auto max-w-5xl space-y-5 pb-44 md:pb-0">
+          <div className="mx-auto w-full max-w-5xl space-y-5 pb-44 md:pb-0">
             <StrategyCard strategy={strategy} onBacktest={runBacktest} />
+            {showDemoPanel ? <DemoPlatformPanel /> : null}
             {report ? <MockBacktestReport strategy={strategy} report={report} /> : null}
           </div>
         ) : null}
